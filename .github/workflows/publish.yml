@@ -123,7 +123,5 @@ jobs:
         allowUpdates: true
         artifactErrorsFailBuild: true
         artifacts: "out/*"
-        makeLatest: false
         name: ${{ needs.publish.outputs.PLUGIN_NAME }} V${{ needs.publish.outputs.PLUGIN_VERSION }}
         tag: ${{ needs.publish.outputs.PLUGIN_VERSION }}
-        updateOnlyUnreleased: true
