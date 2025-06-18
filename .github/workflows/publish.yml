@@ -123,5 +123,5 @@ jobs:
         allowUpdates: true
         artifactErrorsFailBuild: true
         artifacts: "out/*"
-        name: ${{ needs.publish.outputs.PLUGIN_NAME }} V${{ needs.publish.outputs.PLUGIN_VERSION }}
+        name: ${{ needs.publish.outputs.PLUGIN_NAME }} v${{ needs.publish.outputs.PLUGIN_VERSION }}
         tag: ${{ needs.publish.outputs.PLUGIN_VERSION }}
