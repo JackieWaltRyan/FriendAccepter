@@ -16,6 +16,7 @@ trim_trailing_whitespace = true
 ###############################
 
 [*.cs]
+dotnet_diagnostic.CA1812.severity = none
 csharp_indent_block_contents = true
 csharp_indent_braces = false
 csharp_indent_case_contents = true
