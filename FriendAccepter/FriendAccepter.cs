@@ -15,8 +15,6 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
     public Dictionary<Bot, bool> EnabledBot = new();
 
     public Task OnLoaded() {
-        ASF.ArchiLogger.LogGenericInfo($"{Name} Plugin is Loaded!");
-
         return Task.CompletedTask;
     }
 
