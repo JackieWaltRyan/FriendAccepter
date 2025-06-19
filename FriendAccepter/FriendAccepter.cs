@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
-using ArchiSteamFarm.Core;
 using ArchiSteamFarm.Plugins.Interfaces;
 using ArchiSteamFarm.Steam;
 
@@ -12,11 +11,10 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
     public string Name => nameof(FriendAccepter);
     public string RepositoryName => "JackieWaltRyan/FriendAccepter";
     public Version Version => typeof(FriendAccepter).Assembly.GetName().Version ?? throw new InvalidOperationException(nameof(Version));
-    public Dictionary<Bot, bool> EnabledBot = new();
 
-    public Task OnLoaded() {
-        return Task.CompletedTask;
-    }
+    public Dictionary<Bot, bool> Bots = new();
+
+    public Task OnLoaded() => Task.CompletedTask;
 
     public Task OnBotInitModules(Bot bot, IReadOnlyDictionary<string, JsonElement>? additionalConfigProperties = null) {
         if (additionalConfigProperties == null) {
@@ -30,7 +28,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
 
                     bot.ArchiLogger.LogGenericInfo($"Enable Friend Accepter: {enabled}");
 
-                    EnabledBot.Add(bot, enabled);
+                    Bots.Add(bot, enabled);
 
                     break;
                 }
@@ -40,5 +38,13 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
         return Task.CompletedTask;
     }
 
-    public Task<bool> OnBotFriendRequest(Bot bot, ulong steamID) => Task.FromResult(EnabledBot[bot]);
+    public Task<bool> OnBotFriendRequest(Bot bot, ulong steamID) {
+        if (!Bots[bot]) {
+            return Task.FromResult(false);
+        }
+
+        bot.ArchiLogger.LogGenericInfo($"User {steamID} add to friend.");
+
+        return Task.FromResult(true);
+    }
 }
