@@ -11,7 +11,6 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
     public string Name => nameof(FriendAccepter);
     public string RepositoryName => "JackieWaltRyan/FriendAccepter";
     public Version Version => typeof(FriendAccepter).Assembly.GetName().Version ?? throw new InvalidOperationException(nameof(Version));
-
     public Dictionary<Bot, bool> Bots = new();
 
     public Task OnLoaded() => Task.CompletedTask;
