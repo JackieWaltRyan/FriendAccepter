@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Helpers.Json;
 using ArchiSteamFarm.Plugins.Interfaces;
 using ArchiSteamFarm.Steam;
 
@@ -11,7 +12,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
     public string Name => nameof(FriendAccepter);
     public string RepositoryName => "JackieWaltRyan/FriendAccepter";
     public Version Version => typeof(FriendAccepter).Assembly.GetName().Version ?? throw new InvalidOperationException(nameof(Version));
-    public Dictionary<Bot, bool> Bots = new();
+    public Dictionary<string, bool> Bots = new();
 
     public Task OnLoaded() => Task.CompletedTask;
 
@@ -23,22 +24,24 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
         foreach (KeyValuePair<string, JsonElement> configProperty in additionalConfigProperties) {
             switch (configProperty.Key) {
                 case "EnableFriendAccepter" when configProperty.Value.ValueKind is JsonValueKind.True or JsonValueKind.False: {
-                    bool enabled = configProperty.Value.GetBoolean();
+                    bool isEnabled = configProperty.Value.GetBoolean();
 
-                    bot.ArchiLogger.LogGenericInfo($"Enable Friend Accepter: {enabled}");
+                    bot.ArchiLogger.LogGenericInfo($"Enable Friend Accepter: {isEnabled}");
 
-                    Bots.Add(bot, enabled);
+                    Bots.Add(bot.BotName, isEnabled);
 
                     break;
                 }
             }
         }
 
+        bot.ArchiLogger.LogGenericInfo(Bots.ToJsonText());
+
         return Task.CompletedTask;
     }
 
     public Task<bool> OnBotFriendRequest(Bot bot, ulong steamID) {
-        if (!Bots[bot]) {
+        if (!Bots[bot.BotName]) {
             return Task.FromResult(false);
         }
 
