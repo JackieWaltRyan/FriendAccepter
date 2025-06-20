@@ -35,8 +35,6 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
             }
         }
 
-        bot.ArchiLogger.LogGenericInfo(Bots.ToJsonText());
-
         return Task.CompletedTask;
     }
 
