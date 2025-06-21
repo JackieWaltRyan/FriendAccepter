@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
-using ArchiSteamFarm.Helpers.Json;
 using ArchiSteamFarm.Plugins.Interfaces;
 using ArchiSteamFarm.Steam;
 
@@ -28,7 +27,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
 
                     bot.ArchiLogger.LogGenericInfo($"Enable Friend Accepter: {isEnabled}");
 
-                    Bots.Add(bot.BotName, isEnabled);
+                    Bots[bot.BotName] = isEnabled;
 
                     break;
                 }
