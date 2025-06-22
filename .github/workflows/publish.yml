@@ -12,6 +12,7 @@ jobs:
     outputs:
       PLUGIN_NAME: ${{ steps.plugin-name.outputs.info }}
       PLUGIN_VERSION: ${{ steps.plugin-version.outputs.info }}
+      ASF_VERSION: ${{ steps.asf-version.outputs.info }}
     
     steps:
     - name: Checkout code
@@ -40,6 +41,13 @@ jobs:
       uses: mavrosxristoforos/get-xml-info@2.0
       with:
         xml-file: 'Directory.Build.props'
+        xpath: '//Version'
+
+    - name: Parse ASF version from Directory.Build.props
+      id: asf-version
+      uses: mavrosxristoforos/get-xml-info@2.0
+      with:
+        xml-file: 'ArchiSteamFarm/Directory.Build.props'
         xpath: '//Version'
 
     - name: Publish plugin on Unix
@@ -94,8 +102,8 @@ jobs:
       with:
         allowUpdates: true
         artifactErrorsFailBuild: true
-        omitBody: true
         omitBodyDuringUpdate: true
         tag: ${{ needs.publish.outputs.PLUGIN_VERSION }}
         name: ${{ needs.publish.outputs.PLUGIN_NAME }} v${{ needs.publish.outputs.PLUGIN_VERSION }}
+        body: This version requires ArchiSteamFarm v${{ needs.publish.outputs.ASF_VERSION }} or newer.
         artifacts: "out/*"
