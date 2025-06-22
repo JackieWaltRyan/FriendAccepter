@@ -49,7 +49,7 @@ jobs:
       run: |
         set -eu
 
-        dotnet publish "$PLUGIN_NAME" -c "$CONFIGURATION" -o "out/plugin/${PLUGIN_NAME}" -p:ContinuousIntegrationBuild=true -p:TargetLatestRuntimePatch=false -p:UseAppHost=false --nologo
+        dotnet publish "$PLUGIN_NAME" -c Release -o "out/plugin/${PLUGIN_NAME}" -p:ContinuousIntegrationBuild=true -p:TargetLatestRuntimePatch=false -p:UseAppHost=false --nologo
 
         seven_zip_args="-mx=9 -mfb=258 -mpass=15"
         zip_args="-9"
