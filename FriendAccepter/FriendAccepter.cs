@@ -1,11 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Helpers.Json;
 using ArchiSteamFarm.Plugins.Interfaces;
 using ArchiSteamFarm.Steam;
 
 namespace FriendAccepter;
+
+internal sealed class AutoPostConfig {
+    [JsonInclude]
+    internal ulong GroupID { get; set; } = 103582791432987389;
+
+    [JsonInclude]
+    internal string Comment { get; set; } = "Feel free to add me! Accept everyone!";
+
+    [JsonInclude]
+    internal uint Timeout { get; set; } = 60;
+
+    [JsonConstructor]
+    internal AutoPostConfig() { }
+}
 
 internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFriendRequest {
     public string Name => nameof(FriendAccepter);
@@ -15,10 +31,13 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
 
     public Task OnLoaded() => Task.CompletedTask;
 
-    public Task OnBotInitModules(Bot bot, IReadOnlyDictionary<string, JsonElement>? additionalConfigProperties = null) {
+    public async Task OnBotInitModules(Bot bot, IReadOnlyDictionary<string, JsonElement>? additionalConfigProperties = null) {
         if (additionalConfigProperties == null) {
-            return Task.CompletedTask;
+            return;
         }
+
+        bool autoPostEnabled = false;
+        AutoPostConfig autoPostConfig = new();
 
         foreach (KeyValuePair<string, JsonElement> configProperty in additionalConfigProperties) {
             switch (configProperty.Key) {
@@ -31,10 +50,38 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
 
                     break;
                 }
+
+                case "FriendAccepterAutoPost": {
+                    if (configProperty.Value.ValueKind is JsonValueKind.True or JsonValueKind.False) {
+                        bool isEnabled = configProperty.Value.GetBoolean();
+
+                        bot.ArchiLogger.LogGenericInfo($"Friend Auto Post: {isEnabled}");
+
+                        autoPostEnabled = isEnabled;
+
+                        bot.ArchiLogger.LogGenericInfo($"Friend Auto Post Config: {autoPostConfig.ToJsonText()}");
+                    } else {
+                        AutoPostConfig? filter = configProperty.Value.ToJsonObject<AutoPostConfig>();
+
+                        if (filter != null) {
+                            autoPostEnabled = true;
+
+                            bot.ArchiLogger.LogGenericInfo($"Friend Auto Post: {autoPostEnabled}");
+
+                            autoPostConfig = filter;
+
+                            bot.ArchiLogger.LogGenericInfo($"Friend Auto Post Config: {filter.ToJsonText()}");
+                        }
+                    }
+
+                    break;
+                }
             }
         }
 
-        return Task.CompletedTask;
+        if (autoPostEnabled) {
+            await AutoPost(bot, autoPostConfig).ConfigureAwait(false);
+        }
     }
 
     public Task<bool> OnBotFriendRequest(Bot bot, ulong steamID) {
@@ -45,5 +92,23 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
         bot.ArchiLogger.LogGenericInfo($"User {steamID} add to friend.");
 
         return Task.FromResult(true);
+    }
+
+    // ReSharper disable once FunctionRecursiveOnAllPaths
+    public static async Task AutoPost(Bot bot, AutoPostConfig config) {
+        try {
+            if (!bot.IsConnectedAndLoggedOn) {
+                await Task.Delay(TimeSpan.FromMinutes(1)).ConfigureAwait(false);
+                await AutoPost(bot, config).ConfigureAwait(false);
+            }
+
+            bot.ArchiLogger.LogGenericInfo("AutoPost is run.");
+
+            await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+            await AutoPost(bot, config).ConfigureAwait(false);
+        } catch {
+            await Task.Delay(TimeSpan.FromMinutes(1)).ConfigureAwait(false);
+            await AutoPost(bot, config).ConfigureAwait(false);
+        }
     }
 }
