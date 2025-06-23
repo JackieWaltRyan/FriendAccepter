@@ -100,7 +100,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
                     { "comment", config.Comment },
                     { "count", "10" },
                     { "feature2", "-1" }
-                }, referer: new Uri(ArchiWebHandler.SteamCommunityURL, $"/groups/{config.GroupID}/comments"), session: ArchiWebHandler.ESession.Lowercase, headers: new ReadOnlyCollection<KeyValuePair<string, string>>([new KeyValuePair<string, string>("Cookie", bot.ArchiWebHandler.WebBrowser.CookieContainer.GetCookieHeader(ArchiWebHandler.SteamCommunityURL))])
+                }, referer: new Uri(ArchiWebHandler.SteamCommunityURL, $"/groups/{config.GroupID}/comments"), session: ArchiWebHandler.ESession.Lowercase
             ).ConfigureAwait(false);
 
             JsonElement? response = rawResponse?.Content;
