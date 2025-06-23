@@ -44,9 +44,9 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
 
     public Task OnLoaded() => Task.CompletedTask;
 
-    public async Task OnBotInitModules(Bot bot, IReadOnlyDictionary<string, JsonElement>? additionalConfigProperties = null) {
+    public Task OnBotInitModules(Bot bot, IReadOnlyDictionary<string, JsonElement>? additionalConfigProperties = null) {
         if (additionalConfigProperties == null) {
-            return;
+            return Task.CompletedTask;
         }
 
         bool autoPostEnabled = false;
@@ -93,8 +93,12 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
         }
 
         if (autoPostEnabled) {
-            await AutoPost(bot, autoPostConfig).ConfigureAwait(false);
+            // ReSharper disable once AsyncVoidLambda
+            // ReSharper disable once UnusedParameter.Local
+            BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, autoPostConfig).ConfigureAwait(false), null, TimeSpan.FromSeconds(5), TimeSpan.FromMicroseconds(-1));
         }
+
+        return Task.CompletedTask;
     }
 
     public Task<bool> OnBotFriendRequest(Bot bot, ulong steamID) {
@@ -120,7 +124,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
                 { "comment", config.Comment },
                 { "count", "10" },
                 { "feature2", "-1" }
-            }
+            }, referer: new Uri(ArchiWebHandler.SteamCommunityURL, $"/gid/{config.GroupID}")
         ).ConfigureAwait(false);
 
         AddGroupCommentResponse? response = rawResponse?.Content;
