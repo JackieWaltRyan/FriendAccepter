@@ -91,53 +91,39 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
     }
 
     public async Task AutoPost(Bot bot, AutoPostConfig config) {
-        if (!bot.IsConnectedAndLoggedOn) {
-            if (BotsTimers.TryGetValue(bot.BotName, out Timer? value)) {
-                await value.DisposeAsync().ConfigureAwait(false);
-            }
+        uint timeout = 1;
 
-            // ReSharper disable once AsyncVoidLambda
-            // ReSharper disable once UnusedParameter.Local
-            BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, config).ConfigureAwait(false), null, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(-1));
+        if (bot.IsConnectedAndLoggedOn) {
+            string cookie = bot.ArchiWebHandler.WebBrowser.CookieContainer.GetCookieHeader(ArchiWebHandler.SteamCommunityURL);
+            bot.ArchiLogger.LogGenericInfo(cookie);
+
+            ObjectResponse<AddGroupCommentResponse>? rawResponse = await bot.ArchiWebHandler.UrlPostToJsonObjectWithSession<AddGroupCommentResponse>(
+                new Uri(ArchiWebHandler.SteamCommunityURL, $"/comment/Clan/post/{config.GroupID}/-1/"), data: new Dictionary<string, string>(4) {
+                    { "comment", config.Comment },
+                    { "count", "10" },
+                    { "feature2", "-1" }
+                }, referer: new Uri(ArchiWebHandler.SteamCommunityURL, $"/groups/{config.GroupID}/comments"), session: ArchiWebHandler.ESession.Lowercase
+            ).ConfigureAwait(false);
+
+            AddGroupCommentResponse? response = rawResponse?.Content;
+
+            if (response != null) {
+                bot.ArchiLogger.LogGenericInfo(response.ToJsonText());
+
+                bot.ArchiLogger.LogGenericInfo($"Add comment \"{config.Comment}\" to group {config.GroupID} return status {response.Success}.");
+
+                timeout = response.Success ? config.Timeout : 1;
+
+                bot.ArchiLogger.LogGenericInfo($"Next send comment: {DateTime.Now.AddMinutes(timeout):T}");
+            }
         }
 
-        string cookie = bot.ArchiWebHandler.WebBrowser.CookieContainer.GetCookieHeader(ArchiWebHandler.SteamCommunityURL);
-        bot.ArchiLogger.LogGenericInfo(cookie);
-
-        ObjectResponse<AddGroupCommentResponse>? rawResponse = await bot.ArchiWebHandler.UrlPostToJsonObjectWithSession<AddGroupCommentResponse>(
-            new Uri(ArchiWebHandler.SteamCommunityURL, $"/comment/Clan/post/{config.GroupID}/-1/"), data: new Dictionary<string, string>(4) {
-                { "comment", config.Comment },
-                { "count", "10" },
-                { "feature2", "-1" }
-            }, referer: new Uri(ArchiWebHandler.SteamCommunityURL, $"/groups/{config.GroupID}/comments"), session: ArchiWebHandler.ESession.Lowercase
-        ).ConfigureAwait(false);
-
-        AddGroupCommentResponse? response = rawResponse?.Content;
-
-        if (response == null) {
-            bot.ArchiLogger.LogGenericInfo(response.ToJsonText());
-
-            if (BotsTimers.TryGetValue(bot.BotName, out Timer? value)) {
-                await value.DisposeAsync().ConfigureAwait(false);
-            }
-
-            // ReSharper disable once AsyncVoidLambda
-            // ReSharper disable once UnusedParameter.Local
-            BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, config).ConfigureAwait(false), null, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(-1));
-        } else {
-            bot.ArchiLogger.LogGenericInfo($"Add comment \"{config.Comment}\" to group {config.GroupID} return status {response.Success}.");
-
-            uint timeout = response.Success ? config.Timeout : 1;
-
-            bot.ArchiLogger.LogGenericInfo($"Next send comment: {DateTime.Now.AddMinutes(timeout):T}");
-
-            if (BotsTimers.TryGetValue(bot.BotName, out Timer? value)) {
-                await value.DisposeAsync().ConfigureAwait(false);
-            }
-
-            // ReSharper disable once AsyncVoidLambda
-            // ReSharper disable once UnusedParameter.Local
-            BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, config).ConfigureAwait(false), null, TimeSpan.FromMinutes(timeout), TimeSpan.FromMicroseconds(-1));
+        if (BotsTimers.TryGetValue(bot.BotName, out Timer? value)) {
+            await value.DisposeAsync().ConfigureAwait(false);
         }
+
+        // ReSharper disable once AsyncVoidLambda
+        // ReSharper disable once UnusedParameter.Local
+        BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, config).ConfigureAwait(false), null, TimeSpan.FromMinutes(timeout), TimeSpan.FromMicroseconds(-1));
     }
 }
