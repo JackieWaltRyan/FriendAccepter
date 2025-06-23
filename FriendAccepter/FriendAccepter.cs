@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -94,15 +95,12 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
         uint timeout = 1;
 
         if (bot.IsConnectedAndLoggedOn) {
-            string cookie = bot.ArchiWebHandler.WebBrowser.CookieContainer.GetCookieHeader(ArchiWebHandler.SteamCommunityURL);
-            bot.ArchiLogger.LogGenericInfo(cookie);
-
             ObjectResponse<AddGroupCommentResponse>? rawResponse = await bot.ArchiWebHandler.UrlPostToJsonObjectWithSession<AddGroupCommentResponse>(
                 new Uri(ArchiWebHandler.SteamCommunityURL, $"/comment/Clan/post/{config.GroupID}/-1/"), data: new Dictionary<string, string>(4) {
                     { "comment", config.Comment },
                     { "count", "10" },
                     { "feature2", "-1" }
-                }, referer: new Uri(ArchiWebHandler.SteamCommunityURL, $"/groups/{config.GroupID}/comments"), session: ArchiWebHandler.ESession.Lowercase
+                }, headers: new ReadOnlyCollection<KeyValuePair<string, string>>([new KeyValuePair<string, string>("Cookie", bot.ArchiWebHandler.WebBrowser.CookieContainer.GetCookieHeader(ArchiWebHandler.SteamCommunityURL))])
             ).ConfigureAwait(false);
 
             AddGroupCommentResponse? response = rawResponse?.Content;
