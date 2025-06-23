@@ -65,7 +65,9 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
                     }
 
                     if (autoPostEnabled) {
-                        await BotsTimers[bot.BotName].DisposeAsync().ConfigureAwait(false);
+                        if (BotsTimers.TryGetValue(bot.BotName, out Timer? value)) {
+                            await value.DisposeAsync().ConfigureAwait(false);
+                        }
 
                         // ReSharper disable once AsyncVoidLambda
                         // ReSharper disable once UnusedParameter.Local
@@ -90,7 +92,9 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
 
     public async Task AutoPost(Bot bot, AutoPostConfig config) {
         if (!bot.IsConnectedAndLoggedOn) {
-            await BotsTimers[bot.BotName].DisposeAsync().ConfigureAwait(false);
+            if (BotsTimers.TryGetValue(bot.BotName, out Timer? value)) {
+                await value.DisposeAsync().ConfigureAwait(false);
+            }
 
             // ReSharper disable once AsyncVoidLambda
             // ReSharper disable once UnusedParameter.Local
@@ -108,7 +112,9 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
         AddGroupCommentResponse? response = rawResponse?.Content;
 
         if (response == null) {
-            await BotsTimers[bot.BotName].DisposeAsync().ConfigureAwait(false);
+            if (BotsTimers.TryGetValue(bot.BotName, out Timer? value)) {
+                await value.DisposeAsync().ConfigureAwait(false);
+            }
 
             // ReSharper disable once AsyncVoidLambda
             // ReSharper disable once UnusedParameter.Local
@@ -120,7 +126,9 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
 
             bot.ArchiLogger.LogGenericInfo($"Next send comment: {DateTime.Now.AddMinutes(timeout):T}");
 
-            await BotsTimers[bot.BotName].DisposeAsync().ConfigureAwait(false);
+            if (BotsTimers.TryGetValue(bot.BotName, out Timer? value)) {
+                await value.DisposeAsync().ConfigureAwait(false);
+            }
 
             // ReSharper disable once AsyncVoidLambda
             // ReSharper disable once UnusedParameter.Local
