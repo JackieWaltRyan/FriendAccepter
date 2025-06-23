@@ -72,7 +72,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
 
                         // ReSharper disable once AsyncVoidLambda
                         // ReSharper disable once UnusedParameter.Local
-                        BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, autoPostConfig).ConfigureAwait(false), null, TimeSpan.FromSeconds(10), TimeSpan.FromMicroseconds(-1));
+                        BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, autoPostConfig).ConfigureAwait(false), null, TimeSpan.FromSeconds(0), TimeSpan.FromMicroseconds(-1));
                     }
 
                     break;
@@ -82,7 +82,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
     }
 
     public Task<bool> OnBotFriendRequest(Bot bot, ulong steamID) {
-        if (!BotsEnable[bot.BotName]) {
+        if (!BotsEnable.TryGetValue(bot.BotName, out bool value) || (BotsEnable[bot.BotName] = !value)) {
             return Task.FromResult(false);
         }
 
@@ -100,7 +100,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
                     { "comment", config.Comment },
                     { "count", "10" },
                     { "feature2", "-1" }
-                }, headers: new ReadOnlyCollection<KeyValuePair<string, string>>([new KeyValuePair<string, string>("Cookie", bot.ArchiWebHandler.WebBrowser.CookieContainer.GetCookieHeader(ArchiWebHandler.SteamCommunityURL))])
+                }, referer: new Uri(ArchiWebHandler.SteamCommunityURL, $"/groups/{config.GroupID}/comments"), session: ArchiWebHandler.ESession.Lowercase, headers: new ReadOnlyCollection<KeyValuePair<string, string>>([new KeyValuePair<string, string>("Cookie", bot.ArchiWebHandler.WebBrowser.CookieContainer.GetCookieHeader(ArchiWebHandler.SteamCommunityURL))])
             ).ConfigureAwait(false);
 
             AddGroupCommentResponse? response = rawResponse?.Content;
