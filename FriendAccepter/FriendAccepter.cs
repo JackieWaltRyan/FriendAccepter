@@ -95,7 +95,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
         uint timeout = 1;
 
         if (bot.IsConnectedAndLoggedOn) {
-            ObjectResponse<JsonElement>? rawResponse = await bot.ArchiWebHandler.UrlPostToJsonObjectWithSession<JsonElement>(
+            ObjectResponse<AddGroupCommentResponse>? rawResponse = await bot.ArchiWebHandler.UrlPostToJsonObjectWithSession<AddGroupCommentResponse>(
                 new Uri(ArchiWebHandler.SteamCommunityURL, $"/comment/Clan/post/{config.GroupID}/-1/"), data: new Dictionary<string, string>(4) {
                     { "comment", config.Comment },
                     { "count", "10" },
@@ -103,14 +103,12 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
                 }
             ).ConfigureAwait(false);
 
-            JsonElement? response = rawResponse?.Content;
+            AddGroupCommentResponse? response = rawResponse?.Content;
 
             if (response != null) {
-                bot.ArchiLogger.LogGenericInfo(response.ToJsonText());
+                bot.ArchiLogger.LogGenericInfo($"Add comment \"{config.Comment}\" to group {config.GroupID} return status {response.Success}.");
 
-                // bot.ArchiLogger.LogGenericInfo($"Add comment \"{config.Comment}\" to group {config.GroupID} return status {response.Success}.");
-
-                // timeout = response.Success ? config.Timeout : 1;
+                timeout = response.Success ? config.Timeout : 1;
 
                 bot.ArchiLogger.LogGenericInfo($"Next send comment: {DateTime.Now.AddMinutes(timeout):T}");
             }
