@@ -16,11 +16,7 @@ internal sealed class AutoPostConfig {
     internal AutoPostConfig() { }
 }
 
-internal sealed class AddGroupCommentResponse {
-    [JsonInclude]
+public class AddGroupCommentResponse {
     [JsonPropertyName("success")]
-    internal bool Success { get; }
-
-    [JsonConstructor]
-    internal AddGroupCommentResponse() { }
+    public bool Success { get; set; }
 }
