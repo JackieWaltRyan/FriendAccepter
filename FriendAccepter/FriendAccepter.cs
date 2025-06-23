@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using ArchiSteamFarm.Helpers.Json;
@@ -12,45 +11,20 @@ using ArchiSteamFarm.Web.Responses;
 
 namespace FriendAccepter;
 
-internal sealed class AutoPostConfig {
-    [JsonInclude]
-    internal ulong GroupID { get; set; } = 103582791432987389;
-
-    [JsonInclude]
-    internal string Comment { get; set; } = "Feel free to add me! Accept everyone!";
-
-    [JsonInclude]
-    internal uint Timeout { get; set; } = 60;
-
-    [JsonConstructor]
-    internal AutoPostConfig() { }
-}
-
-internal sealed class AddGroupCommentResponse {
-    [JsonInclude]
-    [JsonPropertyName("success")]
-    internal bool Success { get; }
-
-    [JsonConstructor]
-    internal AddGroupCommentResponse() { }
-}
-
 internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFriendRequest {
     public string Name => nameof(FriendAccepter);
     public string RepositoryName => "JackieWaltRyan/FriendAccepter";
     public Version Version => typeof(FriendAccepter).Assembly.GetName().Version ?? throw new InvalidOperationException(nameof(Version));
-    public Dictionary<string, bool> Bots = new();
+
+    public Dictionary<string, bool> BotsEnable = new();
     public Dictionary<string, Timer> BotsTimers = new();
 
     public Task OnLoaded() => Task.CompletedTask;
 
-    public Task OnBotInitModules(Bot bot, IReadOnlyDictionary<string, JsonElement>? additionalConfigProperties = null) {
+    public async Task OnBotInitModules(Bot bot, IReadOnlyDictionary<string, JsonElement>? additionalConfigProperties = null) {
         if (additionalConfigProperties == null) {
-            return Task.CompletedTask;
+            return;
         }
-
-        bool autoPostEnabled = false;
-        AutoPostConfig autoPostConfig = new();
 
         foreach (KeyValuePair<string, JsonElement> configProperty in additionalConfigProperties) {
             switch (configProperty.Key) {
@@ -59,12 +33,15 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
 
                     bot.ArchiLogger.LogGenericInfo($"Enable Friend Accepter: {isEnabled}");
 
-                    Bots[bot.BotName] = isEnabled;
+                    BotsEnable[bot.BotName] = isEnabled;
 
                     break;
                 }
 
                 case "FriendAccepterAutoPost": {
+                    bool autoPostEnabled = false;
+                    AutoPostConfig autoPostConfig = new();
+
                     if (configProperty.Value.ValueKind is JsonValueKind.True or JsonValueKind.False) {
                         bool isEnabled = configProperty.Value.GetBoolean();
 
@@ -87,22 +64,22 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
                         }
                     }
 
+                    if (autoPostEnabled) {
+                        await BotsTimers[bot.BotName].DisposeAsync().ConfigureAwait(false);
+
+                        // ReSharper disable once AsyncVoidLambda
+                        // ReSharper disable once UnusedParameter.Local
+                        BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, autoPostConfig).ConfigureAwait(false), null, TimeSpan.FromSeconds(10), TimeSpan.FromMicroseconds(-1));
+                    }
+
                     break;
                 }
             }
         }
-
-        if (autoPostEnabled) {
-            // ReSharper disable once AsyncVoidLambda
-            // ReSharper disable once UnusedParameter.Local
-            BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, autoPostConfig).ConfigureAwait(false), null, TimeSpan.FromSeconds(5), TimeSpan.FromMicroseconds(-1));
-        }
-
-        return Task.CompletedTask;
     }
 
     public Task<bool> OnBotFriendRequest(Bot bot, ulong steamID) {
-        if (!Bots[bot.BotName]) {
+        if (!BotsEnable[bot.BotName]) {
             return Task.FromResult(false);
         }
 
@@ -111,9 +88,10 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
         return Task.FromResult(true);
     }
 
-    // ReSharper disable once FunctionRecursiveOnAllPaths
     public async Task AutoPost(Bot bot, AutoPostConfig config) {
         if (!bot.IsConnectedAndLoggedOn) {
+            await BotsTimers[bot.BotName].DisposeAsync().ConfigureAwait(false);
+
             // ReSharper disable once AsyncVoidLambda
             // ReSharper disable once UnusedParameter.Local
             BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, config).ConfigureAwait(false), null, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(-1));
@@ -124,12 +102,14 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
                 { "comment", config.Comment },
                 { "count", "10" },
                 { "feature2", "-1" }
-            }, referer: new Uri(ArchiWebHandler.SteamCommunityURL, $"/gid/{config.GroupID}")
+            }, referer: new Uri(ArchiWebHandler.SteamCommunityURL, $"/groups/{config.GroupID}/comments"), session: ArchiWebHandler.ESession.Lowercase
         ).ConfigureAwait(false);
 
         AddGroupCommentResponse? response = rawResponse?.Content;
 
         if (response == null) {
+            await BotsTimers[bot.BotName].DisposeAsync().ConfigureAwait(false);
+
             // ReSharper disable once AsyncVoidLambda
             // ReSharper disable once UnusedParameter.Local
             BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, config).ConfigureAwait(false), null, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(-1));
@@ -139,6 +119,8 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
             uint timeout = response.Success ? config.Timeout : 1;
 
             bot.ArchiLogger.LogGenericInfo($"Next send comment: {DateTime.Now.AddMinutes(timeout):T}");
+
+            await BotsTimers[bot.BotName].DisposeAsync().ConfigureAwait(false);
 
             // ReSharper disable once AsyncVoidLambda
             // ReSharper disable once UnusedParameter.Local
