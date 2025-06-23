@@ -101,6 +101,9 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
             BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, config).ConfigureAwait(false), null, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(-1));
         }
 
+        string cookie = bot.ArchiWebHandler.WebBrowser.CookieContainer.GetCookieHeader(ArchiWebHandler.SteamCommunityURL);
+        bot.ArchiLogger.LogGenericInfo(cookie);
+
         ObjectResponse<AddGroupCommentResponse>? rawResponse = await bot.ArchiWebHandler.UrlPostToJsonObjectWithSession<AddGroupCommentResponse>(
             new Uri(ArchiWebHandler.SteamCommunityURL, $"/comment/Clan/post/{config.GroupID}/-1/"), data: new Dictionary<string, string>(4) {
                 { "comment", config.Comment },
@@ -112,6 +115,8 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
         AddGroupCommentResponse? response = rawResponse?.Content;
 
         if (response == null) {
+            bot.ArchiLogger.LogGenericInfo(response.ToJsonText());
+
             if (BotsTimers.TryGetValue(bot.BotName, out Timer? value)) {
                 await value.DisposeAsync().ConfigureAwait(false);
             }
