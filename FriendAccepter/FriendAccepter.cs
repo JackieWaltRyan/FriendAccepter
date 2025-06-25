@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,87 +16,81 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
     public string RepositoryName => "JackieWaltRyan/FriendAccepter";
     public Version Version => typeof(FriendAccepter).Assembly.GetName().Version ?? throw new InvalidOperationException(nameof(Version));
 
-    public Dictionary<string, bool> BotsEnable = new();
-    public Dictionary<string, Timer> BotsTimers = new();
+    public Dictionary<string, bool> AcceptFriendsEnable = new();
+    public Dictionary<string, bool> GroupAutoPostEnable = new();
+
+    public Dictionary<string, GroupAutoPostConfig> GroupAutoPostConfig = new();
+    public Dictionary<string, Timer> GroupAutoPostTimers = new();
 
     public Task OnLoaded() => Task.CompletedTask;
 
-    public async Task OnBotInitModules(Bot bot, IReadOnlyDictionary<string, JsonElement>? additionalConfigProperties = null) {
-        if (additionalConfigProperties == null) {
-            return;
-        }
+    public Task OnBotInitModules(Bot bot, IReadOnlyDictionary<string, JsonElement>? additionalConfigProperties = null) {
+        if (additionalConfigProperties != null) {
+            AcceptFriendsEnable[bot.BotName] = false;
+            GroupAutoPostEnable[bot.BotName] = false;
 
-        foreach (KeyValuePair<string, JsonElement> configProperty in additionalConfigProperties) {
-            switch (configProperty.Key) {
-                case "EnableFriendAccepter" when configProperty.Value.ValueKind is JsonValueKind.True or JsonValueKind.False: {
-                    bool isEnabled = configProperty.Value.GetBoolean();
+            GroupAutoPostConfig[bot.BotName] = new GroupAutoPostConfig();
+            GroupAutoPostTimers[bot.BotName] = new Timer(async e => await GroupAutoPost(bot).ConfigureAwait(false), null, Timeout.Infinite, Timeout.Infinite);
 
-                    bot.ArchiLogger.LogGenericInfo($"Enable Friend Accepter: {isEnabled}");
-
-                    BotsEnable[bot.BotName] = isEnabled;
-
-                    break;
-                }
-
-                case "FriendAccepterAutoPost": {
-                    bool autoPostEnabled = false;
-                    AutoPostConfig autoPostConfig = new();
-
-                    if (configProperty.Value.ValueKind is JsonValueKind.True or JsonValueKind.False) {
+            foreach (KeyValuePair<string, JsonElement> configProperty in additionalConfigProperties) {
+                switch (configProperty.Key) {
+                    case "AcceptFriendsEnable" when configProperty.Value.ValueKind is JsonValueKind.True or JsonValueKind.False: {
                         bool isEnabled = configProperty.Value.GetBoolean();
 
-                        bot.ArchiLogger.LogGenericInfo($"Friend Auto Post: {isEnabled}");
+                        bot.ArchiLogger.LogGenericInfo($"AcceptFriendsEnable: {isEnabled}");
 
-                        autoPostEnabled = isEnabled;
+                        AcceptFriendsEnable[bot.BotName] = isEnabled;
 
-                        bot.ArchiLogger.LogGenericInfo($"Friend Auto Post Config: {autoPostConfig.ToJsonText()}");
-                    } else {
-                        AutoPostConfig? filter = configProperty.Value.ToJsonObject<AutoPostConfig>();
-
-                        if (filter != null) {
-                            autoPostEnabled = true;
-
-                            bot.ArchiLogger.LogGenericInfo($"Friend Auto Post: {autoPostEnabled}");
-
-                            autoPostConfig = filter;
-
-                            bot.ArchiLogger.LogGenericInfo($"Friend Auto Post Config: {filter.ToJsonText()}");
-                        }
+                        break;
                     }
 
-                    if (autoPostEnabled) {
-                        if (BotsTimers.TryGetValue(bot.BotName, out Timer? value)) {
-                            await value.DisposeAsync().ConfigureAwait(false);
-                        }
+                    case "GroupAutoPostEnable" when configProperty.Value.ValueKind is JsonValueKind.True or JsonValueKind.False: {
+                        bool isEnabled = configProperty.Value.GetBoolean();
 
-                        // ReSharper disable once AsyncVoidLambda
-                        // ReSharper disable once UnusedParameter.Local
-                        BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, autoPostConfig).ConfigureAwait(false), null, TimeSpan.FromSeconds(0), TimeSpan.FromMicroseconds(-1));
+                        bot.ArchiLogger.LogGenericInfo($"GroupAutoPostEnable: {isEnabled}");
+
+                        GroupAutoPostEnable[bot.BotName] = isEnabled;
+
+                        break;
                     }
 
-                    break;
+                    case "GroupAutoPostConfig": {
+                        GroupAutoPostConfig? config = configProperty.Value.ToJsonObject<GroupAutoPostConfig>();
+
+                        if (config != null) {
+                            GroupAutoPostConfig[bot.BotName] = config;
+                        }
+
+                        bot.ArchiLogger.LogGenericInfo($"GroupAutoPostConfig: {GroupAutoPostConfig[bot.BotName].ToJsonText()}");
+
+                        break;
+                    }
                 }
             }
+
+            if (GroupAutoPostEnable[bot.BotName]) {
+                GroupAutoPostTimers[bot.BotName].Change(1, -1);
+            }
         }
+
+        return Task.CompletedTask;
     }
 
     public Task<bool> OnBotFriendRequest(Bot bot, ulong steamID) {
-        if (!BotsEnable.TryGetValue(bot.BotName, out bool value) || (BotsEnable[bot.BotName] = !value)) {
-            return Task.FromResult(false);
+        if (AcceptFriendsEnable[bot.BotName]) {
+            bot.ArchiLogger.LogGenericInfo($"User: {steamID} | Status: OK");
+
+            return Task.FromResult(true);
         }
 
-        bot.ArchiLogger.LogGenericInfo($"User {steamID} add to friend.");
-
-        return Task.FromResult(true);
+        return Task.FromResult(false);
     }
 
-    public async Task AutoPost(Bot bot, AutoPostConfig config) {
-        uint timeout = 1;
-
+    public async Task GroupAutoPost(Bot bot) {
         if (bot.IsConnectedAndLoggedOn) {
             ObjectResponse<AddGroupCommentResponse>? rawResponse = await bot.ArchiWebHandler.UrlPostToJsonObjectWithSession<AddGroupCommentResponse>(
-                new Uri(ArchiWebHandler.SteamCommunityURL, $"/comment/Clan/post/{config.GroupID}/-1/"), data: new Dictionary<string, string>(4) {
-                    { "comment", config.Comment },
+                new Uri(ArchiWebHandler.SteamCommunityURL, $"/comment/Clan/post/{GroupAutoPostConfig[bot.BotName].GroupID}/-1/"), data: new Dictionary<string, string>(4) {
+                    { "comment", GroupAutoPostConfig[bot.BotName].Comment },
                     { "count", "10" },
                     { "feature2", "-1" }
                 }
@@ -105,21 +98,23 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
 
             AddGroupCommentResponse? response = rawResponse?.Content;
 
+            uint timeout = 1;
+
             if (response != null) {
-                bot.ArchiLogger.LogGenericInfo($"Add comment \"{config.Comment}\" to group {config.GroupID} return status {response.Success}.");
+                if (response.Success) {
+                    timeout = GroupAutoPostConfig[bot.BotName].Timeout;
+                }
 
-                timeout = response.Success ? config.Timeout : 1;
-
-                bot.ArchiLogger.LogGenericInfo($"Next send comment: {DateTime.Now.AddMinutes(timeout):T}");
+                bot.ArchiLogger.LogGenericInfo($"Group: {GroupAutoPostConfig[bot.BotName].GroupID} | Comment: {GroupAutoPostConfig[bot.BotName].Comment} | Status: {response.Success} | Next send: {DateTime.Now.AddMinutes(timeout):T}");
+            } else {
+                bot.ArchiLogger.LogGenericInfo($"Group: {GroupAutoPostConfig[bot.BotName].GroupID} | Comment: {GroupAutoPostConfig[bot.BotName].Comment} | Status: Error | Next send: {DateTime.Now.AddMinutes(timeout):T}");
             }
-        }
 
-        if (BotsTimers.TryGetValue(bot.BotName, out Timer? value)) {
-            await value.DisposeAsync().ConfigureAwait(false);
-        }
+            GroupAutoPostTimers[bot.BotName].Change(TimeSpan.FromMinutes(timeout), TimeSpan.FromMilliseconds(-1));
+        } else {
+            bot.ArchiLogger.LogGenericInfo($"Group: {GroupAutoPostConfig[bot.BotName].GroupID} | Comment: {GroupAutoPostConfig[bot.BotName].Comment} | Status: BotNotConnected | Next send: {DateTime.Now.AddSeconds(10):T}");
 
-        // ReSharper disable once AsyncVoidLambda
-        // ReSharper disable once UnusedParameter.Local
-        BotsTimers[bot.BotName] = new Timer(async e => await AutoPost(bot, config).ConfigureAwait(false), null, TimeSpan.FromMinutes(timeout), TimeSpan.FromMicroseconds(-1));
+            GroupAutoPostTimers[bot.BotName].Change(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(-1));
+        }
     }
 }

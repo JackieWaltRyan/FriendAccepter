@@ -2,18 +2,18 @@ using System.Text.Json.Serialization;
 
 namespace FriendAccepter;
 
-internal sealed class AutoPostConfig {
+public class GroupAutoPostConfig {
     [JsonInclude]
-    internal ulong GroupID { get; set; } = 103582791432987389;
+    public ulong GroupID { get; set; } = 103582791432987389;
 
     [JsonInclude]
-    internal string Comment { get; set; } = "Feel free to add me! Accept everyone!";
+    public string Comment { get; set; } = "Feel free to add me! Accept everyone!";
 
     [JsonInclude]
-    internal uint Timeout { get; set; } = 60;
+    public uint Timeout { get; set; } = 60;
 
     [JsonConstructor]
-    internal AutoPostConfig() { }
+    public GroupAutoPostConfig() { }
 }
 
 public class AddGroupCommentResponse {
