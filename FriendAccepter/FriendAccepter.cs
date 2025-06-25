@@ -61,14 +61,14 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
                             GroupAutoPostConfig[bot.BotName] = config;
                         }
 
-                        bot.ArchiLogger.LogGenericInfo($"GroupAutoPostConfig: {GroupAutoPostConfig[bot.BotName].ToJsonText()}");
-
                         break;
                     }
                 }
             }
 
             if (GroupAutoPostEnable[bot.BotName]) {
+                bot.ArchiLogger.LogGenericInfo($"GroupAutoPostConfig: {GroupAutoPostConfig[bot.BotName].ToJsonText()}");
+
                 GroupAutoPostTimers[bot.BotName].Change(1, -1);
             }
         }
@@ -87,6 +87,8 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
     }
 
     public async Task GroupAutoPost(Bot bot) {
+        uint timeout = 1;
+
         if (bot.IsConnectedAndLoggedOn) {
             ObjectResponse<AddGroupCommentResponse>? rawResponse = await bot.ArchiWebHandler.UrlPostToJsonObjectWithSession<AddGroupCommentResponse>(
                 new Uri(ArchiWebHandler.SteamCommunityURL, $"/comment/Clan/post/{GroupAutoPostConfig[bot.BotName].GroupID}/-1/"), data: new Dictionary<string, string>(4) {
@@ -98,8 +100,6 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
 
             AddGroupCommentResponse? response = rawResponse?.Content;
 
-            uint timeout = 1;
-
             if (response != null) {
                 if (response.Success) {
                     timeout = GroupAutoPostConfig[bot.BotName].Timeout;
@@ -109,12 +109,10 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
             } else {
                 bot.ArchiLogger.LogGenericInfo($"Group: {GroupAutoPostConfig[bot.BotName].GroupID} | Comment: {GroupAutoPostConfig[bot.BotName].Comment} | Status: Error | Next send: {DateTime.Now.AddMinutes(timeout):T}");
             }
-
-            GroupAutoPostTimers[bot.BotName].Change(TimeSpan.FromMinutes(timeout), TimeSpan.FromMilliseconds(-1));
         } else {
-            bot.ArchiLogger.LogGenericInfo($"Group: {GroupAutoPostConfig[bot.BotName].GroupID} | Comment: {GroupAutoPostConfig[bot.BotName].Comment} | Status: BotNotConnected | Next send: {DateTime.Now.AddSeconds(10):T}");
-
-            GroupAutoPostTimers[bot.BotName].Change(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(-1));
+            bot.ArchiLogger.LogGenericInfo($"Group: {GroupAutoPostConfig[bot.BotName].GroupID} | Comment: {GroupAutoPostConfig[bot.BotName].Comment} | Status: BotNotConnected | Next send: {DateTime.Now.AddMinutes(timeout):T}");
         }
+
+        GroupAutoPostTimers[bot.BotName].Change(TimeSpan.FromMinutes(timeout), TimeSpan.FromMilliseconds(-1));
     }
 }
