@@ -36,6 +36,8 @@ configure this feature, add the parameter to your bot's configuration file:
 
 #### Auto Post Configuration
 
+To change this feature, add the following parameter to your bot's config file:
+
 ```json
 {
   "GroupAutoPostConfig": {
