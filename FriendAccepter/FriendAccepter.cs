@@ -20,16 +20,24 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
     public Dictionary<string, bool> GroupAutoPostEnable = new();
 
     public Dictionary<string, GroupAutoPostConfig> GroupAutoPostConfig = new();
+
     public Dictionary<string, Timer> GroupAutoPostTimers = new();
 
     public Task OnLoaded() => Task.CompletedTask;
 
-    public Task OnBotInitModules(Bot bot, IReadOnlyDictionary<string, JsonElement>? additionalConfigProperties = null) {
+    public async Task OnBotInitModules(Bot bot, IReadOnlyDictionary<string, JsonElement>? additionalConfigProperties = null) {
         if (additionalConfigProperties != null) {
             AcceptFriendsEnable[bot.BotName] = false;
             GroupAutoPostEnable[bot.BotName] = false;
 
             GroupAutoPostConfig[bot.BotName] = new GroupAutoPostConfig();
+
+            if (GroupAutoPostTimers.TryGetValue(bot.BotName, out Timer? groupautoposttimer)) {
+                await groupautoposttimer.DisposeAsync().ConfigureAwait(false);
+
+                bot.ArchiLogger.LogGenericInfo("GroupAutoPost Dispose.");
+            }
+
             GroupAutoPostTimers[bot.BotName] = new Timer(async e => await GroupAutoPost(bot).ConfigureAwait(false), null, Timeout.Infinite, Timeout.Infinite);
 
             foreach (KeyValuePair<string, JsonElement> configProperty in additionalConfigProperties) {
@@ -72,8 +80,6 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
                 GroupAutoPostTimers[bot.BotName].Change(1, -1);
             }
         }
-
-        return Task.CompletedTask;
     }
 
     public Task<bool> OnBotFriendRequest(Bot bot, ulong steamID) {
@@ -89,9 +95,9 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
     public async Task GroupAutoPost(Bot bot) {
         uint timeout = 1;
 
-        GroupAutoPostConfig config = GroupAutoPostConfig[bot.BotName];
-
         if (bot.IsConnectedAndLoggedOn) {
+            GroupAutoPostConfig config = GroupAutoPostConfig[bot.BotName];
+
             ObjectResponse<AddGroupCommentResponse>? rawResponse = await bot.ArchiWebHandler.UrlPostToJsonObjectWithSession<AddGroupCommentResponse>(
                 new Uri($"{ArchiWebHandler.SteamCommunityURL}/comment/Clan/post/{config.GroupID}/-1/"), data: new Dictionary<string, string>(4) {
                     { "comment", config.Comment },
@@ -112,7 +118,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
                 bot.ArchiLogger.LogGenericInfo($"Group: {config.GroupID} | Comment: {config.Comment} | Status: Error | Next send: {DateTime.Now.AddMinutes(timeout):T}");
             }
         } else {
-            bot.ArchiLogger.LogGenericInfo($"Group: {config.GroupID} | Comment: {config.Comment} | Status: BotNotConnected | Next send: {DateTime.Now.AddMinutes(timeout):T}");
+            bot.ArchiLogger.LogGenericInfo($"Status: BotNotConnected | Next send: {DateTime.Now.AddMinutes(timeout):T}");
         }
 
         GroupAutoPostTimers[bot.BotName].Change(TimeSpan.FromMinutes(timeout), TimeSpan.FromMilliseconds(-1));
