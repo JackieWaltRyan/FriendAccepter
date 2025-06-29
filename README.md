@@ -1,6 +1,6 @@
 # Friend Accepter Plugin for ArchiSteamFarm
 
-ASF plugin for automatically accepting incoming friend requests.
+ASF plugin for automatically accepting incoming friend requests (and group auto post).
 
 ## Installation
 
