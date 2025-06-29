@@ -16,7 +16,7 @@ public class GroupAutoPostConfig {
     public GroupAutoPostConfig() { }
 }
 
-public class AddGroupCommentResponse {
+internal sealed record AddGroupCommentResponse {
     [JsonPropertyName("success")]
     public bool Success { get; set; }
 }
