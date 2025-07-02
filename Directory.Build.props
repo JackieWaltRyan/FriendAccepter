@@ -18,4 +18,10 @@
         <PackageReleaseNotes>$(PackageProjectUrl)/releases</PackageReleaseNotes>
         <RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
     </PropertyGroup>
+
+    <PropertyGroup>
+        <AssemblyOriginatorKeyFile />
+        <PublicSign>false</PublicSign>
+        <SignAssembly>false</SignAssembly>
+    </PropertyGroup>
 </Project>
