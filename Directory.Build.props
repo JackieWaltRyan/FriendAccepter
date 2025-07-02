@@ -4,23 +4,14 @@
     <PropertyGroup>
         <PluginName>FriendAccepter</PluginName>
         <Version>2.1.0.7</Version>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <ApplicationIcon />
         <Authors>JackieWaltRyan</Authors>
         <Company>$(Authors)</Company>
         <Copyright>Copyright © $([System.DateTime]::UtcNow.Year) $(Company)</Copyright>
         <Description>$(PluginName) description.</Description>
-        <PackageIcon />
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/$(Company)/$(PluginName)</PackageProjectUrl>
         <PackageReleaseNotes>$(PackageProjectUrl)/releases</PackageReleaseNotes>
         <RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <AssemblyOriginatorKeyFile />
         <PublicSign>false</PublicSign>
         <SignAssembly>false</SignAssembly>
     </PropertyGroup>
