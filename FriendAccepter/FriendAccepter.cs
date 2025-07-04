@@ -25,15 +25,23 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
         if (additionalConfigProperties != null) {
             FriendAccepterConfig[bot.BotName] = new FriendAccepterConfig();
 
-            if (FriendAccepterTimers.ContainsKey(bot.BotName)) {
-                if (FriendAccepterTimers[bot.BotName].TryGetValue("GroupAutoPost", out Timer? timer1)) {
-                    await timer1.DisposeAsync().ConfigureAwait(false);
+            if (FriendAccepterTimers.TryGetValue(bot.BotName, out Dictionary<string, Timer>? dict)) {
+                foreach (KeyValuePair<string, Timer> timers in dict) {
+                    switch (timers.Key) {
+                        case "GroupAutoPost": {
+                            await timers.Value.DisposeAsync().ConfigureAwait(false);
 
-                    bot.ArchiLogger.LogGenericInfo("GroupAutoPost Dispose.");
+                            bot.ArchiLogger.LogGenericInfo("GroupAutoPost Dispose.");
+
+                            break;
+                        }
+                    }
                 }
             }
 
-            FriendAccepterTimers[bot.BotName]["GroupAutoPost"] = new Timer(async e => await GroupAutoPost(bot).ConfigureAwait(false), null, Timeout.Infinite, Timeout.Infinite);
+            FriendAccepterTimers[bot.BotName] = new Dictionary<string, Timer> {
+                { "GroupAutoPost", new Timer(async e => await GroupAutoPost(bot).ConfigureAwait(false), null, Timeout.Infinite, Timeout.Infinite) }
+            };
 
             foreach (KeyValuePair<string, JsonElement> configProperty in additionalConfigProperties) {
                 switch (configProperty.Key) {
