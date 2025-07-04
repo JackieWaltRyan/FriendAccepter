@@ -2,18 +2,32 @@ using System.Text.Json.Serialization;
 
 namespace FriendAccepter;
 
-public class GroupAutoPostConfig {
+internal sealed record FriendAccepterConfig {
     [JsonInclude]
-    public ulong GroupID { get; set; } = 103582791432987389;
+    public bool AcceptFriends { get; set; }
 
     [JsonInclude]
-    public string Comment { get; set; } = "Feel free to add me! Accept everyone!";
+    public GroupAutoPostConfig GroupAutoPost { get; set; } = new();
 
-    [JsonInclude]
-    public uint Timeout { get; set; } = 60;
+    internal sealed record GroupAutoPostConfig {
+        [JsonInclude]
+        public bool Enable { get; set; }
+
+        [JsonInclude]
+        public ulong GroupID { get; set; } = 103582791432987389;
+
+        [JsonInclude]
+        public string Comment { get; set; } = "Feel free to add me! Accept everyone!";
+
+        [JsonInclude]
+        public uint Timeout { get; set; } = 60;
+
+        [JsonConstructor]
+        public GroupAutoPostConfig() { }
+    }
 
     [JsonConstructor]
-    public GroupAutoPostConfig() { }
+    public FriendAccepterConfig() { }
 }
 
 internal sealed record AddGroupCommentResponse {
