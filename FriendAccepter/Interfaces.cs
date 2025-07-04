@@ -7,12 +7,12 @@ internal sealed record FriendAccepterConfig {
     public bool AcceptFriends { get; set; }
 
     [JsonInclude]
-    public GroupAutoPostConfig GroupAutoPost { get; set; } = new();
+    public bool GroupAutoPost { get; set; }
 
-    internal sealed record GroupAutoPostConfig {
-        [JsonInclude]
-        public bool Enable { get; set; }
+    [JsonInclude]
+    public AutoPostConfig GroupAutoPostConfig { get; set; } = new();
 
+    internal sealed record AutoPostConfig {
         [JsonInclude]
         public ulong GroupID { get; set; } = 103582791432987389;
 
@@ -23,7 +23,7 @@ internal sealed record FriendAccepterConfig {
         public uint Timeout { get; set; } = 60;
 
         [JsonConstructor]
-        public GroupAutoPostConfig() { }
+        public AutoPostConfig() { }
     }
 
     [JsonConstructor]

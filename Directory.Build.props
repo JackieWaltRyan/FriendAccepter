@@ -3,7 +3,7 @@
 
     <PropertyGroup>
         <PluginName>FriendAccepter</PluginName>
-        <Version>2.1.0.7</Version>
+        <Version>2.1.1.7</Version>
         <ApplicationIcon />
         <Authors>JackieWaltRyan</Authors>
         <Company>$(Authors)</Company>
