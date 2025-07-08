@@ -68,7 +68,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
     }
 
     public Task<bool> OnBotFriendRequest(Bot bot, ulong steamID) {
-        if (FriendAccepterConfig[bot.BotName].AcceptFriends) {
+        if (FriendAccepterConfig.TryGetValue(bot.BotName, out FriendAccepterConfig? value) && value.AcceptFriends) {
             bot.ArchiLogger.LogGenericInfo($"User: {steamID} | Status: OK");
 
             return Task.FromResult(true);
