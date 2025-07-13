@@ -88,7 +88,7 @@ internal sealed class FriendAccepter : IGitHubPluginUpdates, IBotModules, IBotFr
                     { "comment", config.Comment },
                     { "count", "10" },
                     { "feature2", "-1" }
-                }
+                }, referer: new Uri($"{ArchiWebHandler.SteamCommunityURL}/gid/{config.GroupID}/comments")
             ).ConfigureAwait(false);
 
             AddGroupCommentResponse? response = rawResponse?.Content;
