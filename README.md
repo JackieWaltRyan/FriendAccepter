@@ -1,5 +1,9 @@
 # Friend Accepter Plugin for ArchiSteamFarm
 
+[![GitHub release version](https://img.shields.io/github/v/release/JackieWaltRyan/FriendAccepter.svg?label=Stable&logo=github)](https://github.com/JackieWaltRyan/FriendAccepter/releases/latest)
+[![GitHub release date](https://img.shields.io/github/release-date/JackieWaltRyan/FriendAccepter.svg?label=Released&logo=github)](https://github.com/JackieWaltRyan/FriendAccepter/releases/latest)
+[![Github release downloads](https://img.shields.io/github/downloads/JackieWaltRyan/FriendAccepter/latest/total.svg?label=Downloads&logo=github)](https://github.com/JackieWaltRyan/FriendAccepter/releases/latest)
+
 ASF plugin for automatically accepting incoming friend requests (and group auto post).
 
 ## Installation
